@@ -1,0 +1,61 @@
+#!/bin/sh
+# Pre-commit hook for JUST (C project)
+# Ensures newline at EOF, formats code, runs cppcheck and clang-tidy
+# Exits with non-zero if a check fails, blocking the commit
+
+BLUE="\033[0;34m"
+GREEN="\033[0;32m"
+RED="\033[0;31m"
+RESET="\033[0m"
+
+# Get staged C files
+FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(c|h)$')
+[ -z "$FILES" ] && exit 0
+
+printf "${BLUE}1. Ensuring empty line at EOF...${RESET}\n"
+for file in $FILES; do
+    LAST_TWO=$(tail -c2 "$file" | xxd -p)
+    if [ "$LAST_TWO" != "0a0a" ]; then
+        [ -n "$(tail -c1 "$file")" ] && echo "" >> "$file"
+        echo "" >> "$file"
+        git add "$file"
+        printf "${GREEN}   Empty line ensured in $file${RESET}\n"
+    fi
+done
+
+printf "${BLUE}2. Formatting code with clang-format...${RESET}\n"
+for file in $FILES; do
+    clang-format -i "$file"
+    git add "$file"
+    printf "${GREEN}   Formatted $file${RESET}\n"
+done
+
+printf "${BLUE}3. Running cppcheck...${RESET}\n"
+CPP_OK=1
+for file in $FILES; do
+    cppcheck $(grep -v '^#' .cppcheck.cfg | tr '\n' ' ') "$file"
+    if [ $? -ne 0 ]; then
+        printf "${RED}   Cppcheck failed on $file. Commit aborted.${RESET}\n"
+        CPP_OK=0
+    else
+        printf "${GREEN}   Cppcheck OK for $file${RESET}\n"
+    fi
+done
+[ $CPP_OK -eq 0 ] && exit 1
+
+printf "${BLUE}4. Running clang-tidy...${RESET}\n"
+TIDY_OK=1
+for file in $FILES; do
+    clang-tidy "$file" -- -std=c11 -Iinclude
+    if [ $? -ne 0 ]; then
+        printf "${RED}   Clang-tidy failed on $file. Commit aborted.${RESET}\n"
+        TIDY_OK=0
+    else
+        printf "${GREEN}   Clang-tidy OK for $file${RESET}\n"
+    fi
+done
+[ $TIDY_OK -eq 0 ] && exit 1
+
+printf "${GREEN}All pre-commit checks passed!${RESET}\n"
+exit 0
+
