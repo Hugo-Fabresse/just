@@ -1,0 +1,15 @@
+Checks: >
+  clang-analyzer-*,
+  bugprone-*,
+  readability-*,
+  performance-*,
+  -readability-magic-numbers
+
+WarningsAsErrors: '*'
+
+HeaderFilterRegex: '.*'
+
+CheckOptions:
+  - key: readability-identifier-naming.VariableCase
+    value: lower_case
+
