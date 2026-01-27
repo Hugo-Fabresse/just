@@ -1,0 +1,33 @@
+name: "Question / Help"
+description: "Ask a question or request help"
+title: "[Question]: "
+labels: ["question", "help wanted"]
+projects: ["Hugo-Fabresse/2"]
+assignees: []
+
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      placeholder: Describe precisely what you don’t understand or where you are stuck
+    validations:
+      required: true
+
+  - type: input
+    id: contact
+    attributes:
+      label: Contact Details
+      description: How can we get in touch with you if we need more info?
+      placeholder: ex. email@example.com
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      placeholder: File/function concerned, attempts made, expected/actual result
+    validations:
+      required: false
+

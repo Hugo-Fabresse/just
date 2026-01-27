@@ -1,0 +1,45 @@
+name: "Feature Request"
+description: "Propose a new command or improvement"
+title: "[Feature]: "
+labels: ["feature"]
+projects: ["Hugo-Fabresse/2"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to propose a new feature!
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      placeholder: Explain the new command or feature you want
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      placeholder: Why is this useful or fun for the project?
+    validations:
+      required: false
+
+  - type: textarea
+    id: technical
+    attributes:
+      label: Technical Details (optional)
+      placeholder: Implementation ideas, impact on existing code, performance considerations…
+    validations:
+      required: false
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Add any extra info
+    validations:
+      required: false
+

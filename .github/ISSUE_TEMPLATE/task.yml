@@ -1,0 +1,45 @@
+name: "Task / Ticket"
+description: "Create a task, small bug, or note for JUST"
+title: "[Task]: "
+labels: []
+projects: ["Hugo-Fabresse/2"]
+assignees: []
+
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      placeholder: Describe what needs to be done or the issue
+    validations:
+      required: true
+
+  - type: input
+    id: related_issue
+    attributes:
+      label: Related Issue (optional)
+      description: If this task is linked to an issue, enter its number
+      placeholder: ex. #12
+    validations:
+      required: false
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How urgent is this task?
+      options:
+        - Low
+        - Medium
+        - High
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional_comments
+    attributes:
+      label: Additional Comments (optional)
+      placeholder: Extra info, funny remarks, or reminders
+    validations:
+      required: false
+
