@@ -1,0 +1,40 @@
+#!/bin/sh
+# commit-msg hook for JUST (C project)
+
+MSG_FILE="$1"
+
+RED="\033[0;31m"
+GREEN="\033[0;32m"
+BLUE="\033[0;34m"
+RESET="\033[0m"
+
+error() {
+    printf "${RED}commit-msg error:${RESET} %s\n" "$1"
+    exit 1
+}
+
+printf "${BLUE}Checking commit message format...${RESET}\n"
+
+# Extract first non-comment line (commit subject)
+SUBJECT=$(grep -v '^#' "$MSG_FILE" | head -n 1)
+
+# Empty subject
+[ -z "$SUBJECT" ] && error "commit message subject is empty"
+
+# Length check (72 chars max)
+SUBJECT_LENGTH=$(printf "%s" "$SUBJECT" | wc -c)
+[ "$SUBJECT_LENGTH" -gt 72 ] && error "subject exceeds 72 characters ($SUBJECT_LENGTH)"
+
+# Trailing whitespace on subject
+printf "%s" "$SUBJECT" | grep -q '[[:space:]]$' && error "subject has trailing whitespace"
+
+# Conventional format check
+echo "$SUBJECT" | grep -Eq '^(feat|fix|refactor|style|test|docs|build|ci|chore): [a-z0-9]' \
+    || error "invalid format. Expected: <type>: <description>"
+
+# No ending dot
+echo "$SUBJECT" | grep -q '\.$' && error "subject must not end with a dot"
+
+printf "${GREEN}Commit message OK${RESET}\n"
+exit 0
+

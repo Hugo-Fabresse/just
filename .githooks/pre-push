@@ -1,0 +1,128 @@
+#!/bin/sh
+# pre-push hook for JUST (C project)
+# Runs full test suite and checks before allowing push
+# Exits with non-zero if any check fails, blocking the push
+
+BLUE="\033[0;34m"
+GREEN="\033[0;32m"
+RED="\033[0;31m"
+YELLOW="\033[1;33m"
+RESET="\033[0m"
+
+error() {
+    printf "${RED}✗ Pre-push check failed:${RESET} %s\n" "$1"
+    exit 1
+}
+
+warn() {
+    printf "${YELLOW}⚠ Warning:${RESET} %s\n" "$1"
+}
+
+success() {
+    printf "${GREEN}✓${RESET} %s\n" "$1"
+}
+
+info() {
+    printf "${BLUE}→${RESET} %s\n" "$1"
+}
+
+# Get the remote name and URL
+remote="$1"
+url="$2"
+
+printf "\n${BLUE}╔════════════════════════════════════════╗${RESET}\n"
+printf "${BLUE}║${RESET}     Pre-push checks for JUST           ${BLUE}║${RESET}\n"
+printf "${BLUE}╚════════════════════════════════════════╝${RESET}\n\n"
+
+info "Remote: $remote"
+info "URL: $url"
+echo
+
+# Check 1: Ensure we're not pushing to protected branches directly
+info "Checking branch protection..."
+current_branch=$(git symbolic-ref --short HEAD)
+if [ "$current_branch" = "master" ] || [ "$current_branch" = "main" ]; then
+    # Allow push to main/master but warn
+    warn "Pushing directly to $current_branch"
+fi
+success "Branch check passed"
+
+# Check 2: Ensure working directory is clean
+info "Checking working directory..."
+if ! git diff-index --quiet HEAD --; then
+    error "Working directory is not clean. Commit or stash changes first."
+fi
+success "Working directory is clean"
+
+# Check 3: Build the project
+info "Building project..."
+if ! make fclean > /dev/null 2>&1; then
+    warn "Clean failed (may be expected)"
+fi
+if ! make all > /dev/null 2>&1; then
+    error "Build failed. Fix compilation errors before pushing."
+fi
+success "Build successful"
+
+# Check 4: Run code formatting check
+info "Checking code formatting..."
+# Save current state
+git stash -q --keep-index
+# Run formatter
+make format > /dev/null 2>&1
+# Check if anything changed
+if ! git diff --quiet; then
+    git stash pop -q
+    error "Code is not properly formatted. Run 'make format' first."
+fi
+git stash pop -q > /dev/null 2>&1
+success "Code formatting is correct"
+
+# Check 5: Run static analysis
+info "Running static analysis..."
+if ! make check > /dev/null 2>&1; then
+    error "Static analysis failed. Fix issues reported by cppcheck/clang-tidy."
+fi
+success "Static analysis passed"
+
+# Check 6: Run tests (if test target exists)
+info "Running tests..."
+if make -n test > /dev/null 2>&1; then
+    if ! make test > /dev/null 2>&1; then
+        error "Tests failed. Fix failing tests before pushing."
+    fi
+    success "All tests passed"
+else
+    warn "No tests found (make test not available)"
+fi
+
+# Check 7: Check for TODOs and FIXMEs in staged commits
+info "Checking for TODOs/FIXMEs in new commits..."
+# Get commits that will be pushed
+while read local_ref local_sha remote_ref remote_sha; do
+    if [ "$local_sha" != "0000000000000000000000000000000000000000" ]; then
+        if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
+            # New branch, check all commits
+            range="$local_sha"
+        else
+            # Existing branch, check new commits
+            range="$remote_sha..$local_sha"
+        fi
+
+        # Check for TODOs/FIXMEs in added lines
+        todo_count=$(git diff "$range" | grep -E "^\+.*\b(TODO|FIXME)\b" | wc -l)
+        if [ "$todo_count" -gt 0 ]; then
+            warn "Found $todo_count TODO/FIXME in commits being pushed"
+        fi
+    fi
+done
+
+# Final cleanup
+make fclean > /dev/null 2>&1
+
+printf "\n${GREEN}╔════════════════════════════════════════╗${RESET}\n"
+printf "${GREEN}║${RESET}   All pre-push checks passed! ✓        ${GREEN}║${RESET}\n"
+printf "${GREEN}╚════════════════════════════════════════╝${RESET}\n\n"
+
+exit 0
+

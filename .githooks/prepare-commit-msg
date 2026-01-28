@@ -1,0 +1,62 @@
+#!/bin/sh
+# prepare-commit-msg hook for JUST (C project)
+
+MSG_FILE="$1"
+COMMIT_SOURCE="$2"
+
+# Do nothing for merges, squashes, or amended commits
+case "$COMMIT_SOURCE" in
+    merge|squash|commit)
+        exit 0
+        ;;
+esac
+
+# Check if there are non-commented lines
+NON_COMMENT_LINES=$(grep -v '^#' "$MSG_FILE" | grep -v '^$' | wc -l)
+
+# If non-commented content already exists, do nothing
+if [ "$NON_COMMENT_LINES" -gt 0 ]; then
+    exit 0
+fi
+
+# Add template at the beginning of the file
+TEMPLATE=$(cat << 'EOF'
+
+# ┌─────────────────────────────────────────────────────────────────┐
+# │ Conventional Commit Format                                      │
+# └─────────────────────────────────────────────────────────────────┘
+#
+# <type>: <description>
+#
+# Types:
+#   feat:     New feature
+#   fix:      Bug fix
+#   refactor: Code refactoring (no functional changes)
+#   style:    Code style/formatting changes
+#   test:     Adding or updating tests
+#   docs:     Documentation changes
+#   build:    Build system or dependencies changes
+#   ci:       CI/CD configuration changes
+#   chore:    Other changes (tooling, config, etc.)
+#
+# Rules:
+#   • Use lowercase for description
+#   • No period at the end
+#   • Keep first line under 72 characters
+#   • Use imperative mood: "add" not "added" or "adds"
+#
+# Examples:
+#   feat: add user authentication module
+#   fix: prevent memory leak in parser
+#   refactor: simplify error handling logic
+#   docs: update installation instructions
+#
+EOF
+)
+
+# Insert template at the beginning, followed by existing content
+printf "%s\n%s" "$TEMPLATE" "$(cat "$MSG_FILE")" > "$MSG_FILE.tmp"
+mv "$MSG_FILE.tmp" "$MSG_FILE"
+
+exit 0
+

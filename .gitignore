@@ -1,0 +1,205 @@
+# .gitignore for JUST (C project)
+
+########################
+# Build artifacts
+########################
+# Object files
+*.o
+*.obj
+*.ko
+*.elf
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# Build directories
+build/
+bin/
+obj/
+out/
+
+# Specific target
+just
+
+########################
+# Debugging
+########################
+# Core dumps
+core
+core.*
+*.core
+
+# GDB history
+.gdb_history
+*.dSYM/
+
+# Valgrind
+*.memcheck
+vgcore.*
+
+########################
+# Compiler and linker
+########################
+# Precompiled headers
+*.gch
+*.pch
+
+# Linker output
+*.ilk
+*.map
+*.exp
+
+# Static and shared libraries
+*.lib
+*.a
+*.la
+*.lo
+*.so
+*.so.*
+*.dylib
+*.dll
+
+########################
+# Development tools
+########################
+# Compilation database
+compile_commands.json
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
+
+# Make
+*.d
+.deps/
+
+# Clang
+.cache/
+*.plist
+
+# Coverage
+*.gcno
+*.gcda
+*.gcov
+coverage/
+*.profraw
+*.profdata
+
+########################
+# Editor and IDE
+########################
+# VSCode
+.vscode/
+*.code-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+.*.sw?
+Session.vim
+
+# Emacs
+*~
+\#*\#
+.\#*
+.dir-locals.el
+
+# JetBrains (CLion)
+.idea/
+*.iml
+cmake-build-*/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Xcode
+*.xcodeproj
+*.xcworkspace
+xcuserdata/
+
+########################
+# OS specific
+########################
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+########################
+# Logs and temporary
+########################
+*.log
+*.tmp
+*.temp
+*.bak
+*.swp
+*.cache
+
+# Test outputs
+test_results/
+*.test
+
+########################
+# Documentation
+########################
+# Doxygen
+docs/html/
+docs/latex/
+Doxyfile.bak
+
+# Man pages (generated)
+*.1
+*.3
+*.7
+
+########################
+# Package managers
+########################
+# Conan
+conanfile.txt.user
+conanbuildinfo.*
+conaninfo.txt
+
+# vcpkg
+vcpkg_installed/
+
+########################
+# Misc
+########################
+# Tags
+tags
+TAGS
+.tags
+.TAGS
+
+# CTags
+.ctags
+
+# Archive files (unless you want to keep them)
+*.tar
+*.tar.gz
+*.zip
+*.7z
+*.rar
+
