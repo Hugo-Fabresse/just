@@ -1,7 +1,7 @@
 #!/bin/bash
 # scripts/release.sh - Automate the release process for JUST
 
-set -e
+set -euo pipefail
 
 BLUE="\033[0;34m"
 GREEN="\033[0;32m"
@@ -9,168 +9,131 @@ RED="\033[0;31m"
 YELLOW="\033[1;33m"
 RESET="\033[0m"
 
+die() {
+    printf "%b✗ %s%b\n" "$RED" "$1" "$RESET" >&2
+    exit 1
+}
+
+info() {
+    printf "%b→ %s%b\n" "$BLUE" "$1" "$RESET"
+}
+
+ok() {
+    printf "%b✓ %s%b\n" "$GREEN" "$1" "$RESET"
+}
+
+warn() {
+    printf "%b⚠ %s%b\n" "$YELLOW" "$1" "$RESET"
+}
+
 # Usage
 if [ $# -ne 1 ]; then
-    echo "Usage: $0 <version>"
-    echo ""
-    echo "Example: $0 0.2.0"
-    echo ""
-    echo "This will:"
-    echo "  1. Verify clean working directory"
-    echo "  2. Run all checks (build, format, analysis)"
-    echo "  3. Prompt to update CHANGELOG.md"
-    echo "  4. Create git tag v<version>"
-    echo "  5. Push tag to origin"
-    echo "  6. Provide instructions for GitHub release"
+    printf "Usage: %s <version>\n" "$0"
+    printf "Example: %s 0.1.0\n" "$0"
     exit 1
 fi
 
-VERSION=$1
+VERSION="$1"
 TAG="v$VERSION"
 
-printf "${BLUE}╔════════════════════════════════════════╗${RESET}\n"
-printf "${BLUE}║${RESET}           Preparing Release ${TAG}           ${BLUE}║${RESET}\n"
-printf "${BLUE}╚════════════════════════════════════════╝${RESET}\n"
-printf "\n"
+printf "%b╔════════════════════════════════════════╗%b\n" "$BLUE" "$RESET"
+printf "%b║%b         Preparing Release %-10s   %b║%b\n" "$BLUE" "$RESET" "$TAG" "$BLUE" "$RESET"
+printf "%b╚════════════════════════════════════════╝%b\n\n" "$BLUE" "$RESET"
 
-# Step 1: Check git status
-printf "${BLUE}→${RESET} Checking git status...\n"
-if ! git diff-index --quiet HEAD --; then
-    printf "${RED}✗ Error: Working directory is not clean${RESET}\n"
-    printf "  Commit or stash your changes first.\n"
-    exit 1
-fi
-printf "${GREEN}✓${RESET} Working directory is clean\n"
+# 1. Git state checks
+info "Checking git status..."
+git diff-index --quiet HEAD -- || die "Working directory is not clean"
+ok "Working directory is clean"
 
-# Step 2: Ensure we're on main
-printf "${BLUE}→${RESET} Checking branch...\n"
-CURRENT_BRANCH=$(git symbolic-ref --short HEAD)
-if [ "$CURRENT_BRANCH" != "main" ]; then
-    printf "${YELLOW}⚠ Warning: Not on main branch (currently on $CURRENT_BRANCH)${RESET}\n"
-    read -p "Continue anyway? (y/N) " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        exit 1
-    fi
-fi
-printf "${GREEN}✓${RESET} On branch $CURRENT_BRANCH\n"
+info "Checking branch..."
+CURRENT_BRANCH="$(git symbolic-ref --short HEAD)"
+[ "$CURRENT_BRANCH" = "main" ] || {
+    warn "Not on main branch (currently on $CURRENT_BRANCH)"
+    read -r -p "Continue anyway? (y/N) " reply
+    [[ "$reply" =~ ^[Yy]$ ]] || exit 1
+}
+ok "On branch $CURRENT_BRANCH"
 
-# Step 3: Pull latest changes
-printf "${BLUE}→${RESET} Pulling latest changes...\n"
+info "Pulling latest changes..."
 git pull origin "$CURRENT_BRANCH"
-printf "${GREEN}✓${RESET} Up to date with origin\n"
+ok "Up to date with origin"
 
-# Step 4: Check if tag already exists
-printf "${BLUE}→${RESET} Checking if tag already exists...\n"
-if git rev-parse "$TAG" >/dev/null 2>&1; then
-    printf "${RED}✗ Error: Tag $TAG already exists${RESET}\n"
-    exit 1
-fi
-printf "${GREEN}✓${RESET} Tag $TAG is available\n"
+info "Checking tag availability..."
+git rev-parse "$TAG" >/dev/null 2>&1 && die "Tag $TAG already exists"
+ok "Tag $TAG is available"
 
-# Step 5: Run checks
-printf "\n${BLUE}→${RESET} Running code quality checks...\n"
+# 2. Build & checks
+info "Running build..."
+make fclean >/dev/null 2>&1 || warn "Clean failed"
+make >/dev/null || die "Build failed"
+ok "Build successful"
 
-# Clean build
-printf "  ${BLUE}→${RESET} Building release version...\n"
-if ! make fclean > /dev/null 2>&1; then
-    printf "${YELLOW}⚠ Warning: Clean failed${RESET}\n"
-fi
+info "Running static analysis..."
+make check >/dev/null || die "Static analysis failed"
+ok "Static analysis passed"
 
-if ! make > /dev/null 2>&1; then
-    printf "${RED}✗ Build failed${RESET}\n"
-    exit 1
-fi
-printf "${GREEN}✓${RESET} Build successful\n"
-
-# Static analysis
-printf "  ${BLUE}→${RESET} Running static analysis...\n"
-if ! make check > /dev/null 2>&1; then
-    printf "${RED}✗ Static analysis failed${RESET}\n"
-    exit 1
-fi
-printf "${GREEN}✓${RESET} Static analysis passed\n"
-
-# Tests (if available)
-if make -n test > /dev/null 2>&1; then
-    printf "  ${BLUE}→${RESET} Running tests...\n"
-    if ! make test > /dev/null 2>&1; then
-        printf "${RED}✗ Tests failed${RESET}\n"
-        exit 1
-    fi
-    printf "${GREEN}✓${RESET} Tests passed\n"
+# Optional tests
+if make -n test >/dev/null 2>&1; then
+    info "Running tests..."
+    make test >/dev/null || die "Tests failed"
+    ok "Tests passed"
 fi
 
-# Step 6: Prompt to update CHANGELOG
-printf "\n${YELLOW}⚠ IMPORTANT: Update CHANGELOG.md${RESET}\n"
-printf "  1. Move [Unreleased] items to [${VERSION}] - $(date +%Y-%m-%d)\n"
-printf "  2. Add empty [Unreleased] section\n"
-printf "  3. Update comparison links at the bottom\n"
-printf "\n"
-printf "Example:\n"
-printf "${BLUE}## [Unreleased]\n"
-printf "\n"
-printf "### Added\n"
-printf "- Nothing yet\n"
-printf "\n"
-printf "## [${VERSION}] - $(date +%Y-%m-%d)\n"
-printf "[Your changes here]${RESET}\n"
-printf "\n"
+# 3. CHANGELOG validation
+info "Validating CHANGELOG.md..."
 
-read -p "Press Enter when CHANGELOG.md is updated..." -r
+[ -f CHANGELOG.md ] || die "CHANGELOG.md not found"
 
-# Verify CHANGELOG was updated
-if ! grep -q "\[${VERSION}\]" CHANGELOG.md; then
-    printf "${RED}✗ Error: CHANGELOG.md doesn't contain [${VERSION}]${RESET}\n"
-    exit 1
-fi
-printf "${GREEN}✓${RESET} CHANGELOG.md updated\n"
+grep -q "## \\[$VERSION\\]" CHANGELOG.md \
+    || die "CHANGELOG.md does not contain section [$VERSION]"
 
-# Step 7: Commit CHANGELOG changes
-printf "${BLUE}→${RESET} Committing CHANGELOG.md...\n"
+ok "CHANGELOG.md contains [$VERSION]"
+
+# 4. Commit CHANGELOG if needed
 git add CHANGELOG.md
 if ! git diff --cached --quiet; then
-    git commit -m "chore: prepare release ${TAG}"
-    printf "${GREEN}✓${RESET} CHANGELOG committed\n"
+    git commit -m "chore: prepare release $TAG"
+    ok "CHANGELOG committed"
 else
-    printf "${YELLOW}⚠${RESET} No changes to commit\n"
+    warn "No CHANGELOG changes to commit"
 fi
 
-# Step 8: Create annotated tag
-printf "${BLUE}→${RESET} Creating git tag ${TAG}...\n"
+# 5. Create annotated tag
+info "Creating annotated tag $TAG..."
 
-# Extract release notes from CHANGELOG
-RELEASE_NOTES=$(sed -n "/## \[${VERSION}\]/,/## \[/p" CHANGELOG.md | sed '$d' | tail -n +2)
+RELEASE_NOTES="$(
+    sed -n "/## \\[$VERSION\\]/,/^## \\[/p" CHANGELOG.md \
+    | sed '$d' \
+    | tail -n +2
+)"
 
-git tag -a "$TAG" -m "Release ${TAG}
+git tag -a "$TAG" -m "Release $TAG
 
-${RELEASE_NOTES}"
+$RELEASE_NOTES"
 
-printf "${GREEN}✓${RESET} Tag ${TAG} created\n"
+ok "Tag $TAG created"
 
-# Step 9: Push changes and tag
-printf "${BLUE}→${RESET} Pushing to origin...\n"
+# 6. Push
+info "Pushing to origin..."
 git push origin "$CURRENT_BRANCH"
 git push origin "$TAG"
-printf "${GREEN}✓${RESET} Pushed to origin\n"
+ok "Pushed branch and tag"
 
-# Step 10: Instructions for GitHub Release
-printf "\n${GREEN}╔════════════════════════════════════════╗${RESET}\n"
-printf "${GREEN}║${RESET}     Release ${TAG} prepared! ✓         ${GREEN}║${RESET}\n"
-printf "${GREEN}╚════════════════════════════════════════╝${RESET}\n"
-printf "\n"
-printf "${YELLOW}Next steps:${RESET}\n"
-printf "  1. Go to: ${BLUE}https://github.com/Hugo-Fabresse/just/releases/new${RESET}\n"
-printf "  2. Choose tag: ${BLUE}${TAG}${RESET}\n"
-printf "  3. Title: ${BLUE}${TAG}${RESET}\n"
-printf "  4. Copy release notes from CHANGELOG.md\n"
-printf "  5. Check 'Set as latest release'\n"
-printf "  6. Click 'Publish release'\n"
-printf "\n"
-printf "Or use GitHub CLI:\n"
-printf "  ${BLUE}gh release create ${TAG} --title '${TAG}' --notes-file <(sed -n '/## \[${VERSION}\]/,/## \[/p' CHANGELOG.md | sed '\$d' | tail -n +2)${RESET}\n"
-printf "\n"
+# 7. Final instructions
+printf "\n%b╔════════════════════════════════════════╗%b\n" "$GREEN" "$RESET"
+printf "%b║%b     Release %-10s ready ✓         %b║%b\n" "$GREEN" "$RESET" "$TAG" "$GREEN" "$RESET"
+printf "%b╚════════════════════════════════════════╝%b\n\n" "$GREEN" "$RESET"
 
-# Cleanup
-make clean > /dev/null 2>&1
+printf "%bNext steps:%b\n" "$YELLOW" "$RESET"
+printf "  1. Go to: %bhttps://github.com/Hugo-Fabresse/just/releases/new%b\n" "$BLUE" "$RESET"
+printf "  2. Choose tag: %b%s%b\n" "$BLUE" "$TAG" "$RESET"
+printf "  3. Title: %b%s%b\n" "$BLUE" "$TAG" "$RESET"
+printf "  4. Paste release notes from CHANGELOG.md\n"
+printf "  5. Publish release\n\n"
+
+printf "GitHub CLI alternative:\n"
+printf "  %bgh release create %s --title '%s' --notes \"%s\"%b\n" \
+    "$BLUE" "$TAG" "$TAG" "$RELEASE_NOTES" "$RESET"
+
+make clean >/dev/null 2>&1 || true
 
