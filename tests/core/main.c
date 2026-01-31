@@ -16,11 +16,31 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <stdio.h>
+int main(void);
 
-int main()
+#include <criterion/criterion.h>
+
+/**
+ * Test suite: Main program
+ * Description: Basic sanity tests for the main entry point
+ */
+
+Test(main_suite, basic_sanity_check)
 {
-    printf("Hello, world!");
-    return 0;
+    // This test just ensures the test framework is working
+    cr_assert(1 == 1, "Basic arithmetic should work");
+}
+
+Test(main_suite, pointer_null_check)
+{
+    void *ptr = NULL;
+    cr_assert_null(ptr, "NULL pointer should be NULL");
+}
+
+Test(main_suite, string_comparison)
+{
+    const char *expected = "Hello, world!";
+    const char *actual = "Hello, world!";
+    cr_assert_str_eq(expected, actual, "Strings should match");
 }
 

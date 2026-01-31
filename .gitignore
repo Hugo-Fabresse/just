@@ -30,7 +30,6 @@ just
 # Debugging
 ########################
 # Core dumps
-core
 core.*
 *.core
 

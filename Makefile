@@ -4,34 +4,33 @@
 CC := clang
 CFLAGS := -W -Wall -Wextra -Werror -std=c11 -Iinclude
 LDFLAGS :=
+COV_FLAGS := -fprofile-instr-generate -fcoverage-mapping
 
 # Build modes
 DEBUG ?= 0
 ifeq ($(DEBUG), 1)
-    CFLAGS += -g -O0 -DDEBUG
+	CFLAGS += -g -O0 -DDEBUG
 else
-    CFLAGS += -O2 -DNDEBUG
+	CFLAGS += -O2 -DNDEBUG
 endif
 
 # Directories
 SRC_DIR := src
+TEST_DIR := tests
 OBJ_DIR := build
 BIN_DIR := bin
-INCLUDE_DIR := include
 
-# Target
+# Targets
 TARGET := $(BIN_DIR)/just
+TEST_BIN := $(BIN_DIR)/tests
 
-# Sources and objects
-SRCS := $(wildcard $(SRC_DIR)/*.c)
-OBJS := $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS))
+# Sources
+SRCS := $(shell find $(SRC_DIR) -name '*.c')
+OBJS := $(patsubst %.c,$(OBJ_DIR)/%.o,$(SRCS))
+TEST_SRCS := $(shell find $(TEST_DIR) -name '*.c')
+TEST_OBJS := $(patsubst %.c,$(OBJ_DIR)/%.o,$(TEST_SRCS))
 
-# Tools
-CLANG_FORMAT := clang-format
-CPPCHECK := cppcheck
-CLANG_TIDY := clang-tidy
-
-# Colors for output
+# Colors
 BLUE := \033[0;34m
 GREEN := \033[0;32m
 RED := \033[0;31m
@@ -47,58 +46,80 @@ $(TARGET): $(OBJS) | $(BIN_DIR)
 	@printf "$(GREEN)Linking$(RESET) $@\n"
 	@$(CC) $(LDFLAGS) $^ -o $@
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
+$(OBJ_DIR)/%.o: %.c
+	@mkdir -p $(dir $@)
 	@printf "$(BLUE)Compiling$(RESET) $<\n"
 	@$(CC) $(CFLAGS) -c $< -o $@
 
-# Create directories
-$(OBJ_DIR) $(BIN_DIR):
+$(BIN_DIR):
 	@mkdir -p $@
 
-# Clean targets
+# Cleaning
 clean:
-	@printf "$(RED)Cleaning$(RESET) build artifacts\n"
+	@printf "$(RED)Cleaning$(RESET) objects\n"
 	@rm -rf $(OBJ_DIR)
 
 fclean: clean
-	@printf "$(RED)Full clean$(RESET) complete\n"
-	@rm -rf $(BIN_DIR)
+	@printf "$(RED)Full clean$(RESET)\n"
+	@rm -rf $(BIN_DIR) *.profraw *.profdata
 
 re: fclean all
 
-# Code quality targets
+# Tests
+test: CFLAGS += -g
+test: fclean $(TEST_BIN)
+	@printf "$(GREEN)Running$(RESET) tests\n"
+	@./$(TEST_BIN)
+
+$(TEST_BIN): $(TEST_OBJS) | $(BIN_DIR)
+	@printf "$(GREEN)Linking$(RESET) tests\n"
+	@$(CC) $^ -o $@ -lcriterion
+
+# Coverage (LLVM + Criterion)
+coverage: CFLAGS += $(COV_FLAGS)
+coverage: LDFLAGS += $(COV_FLAGS)
+coverage: fclean $(TEST_BIN)
+	@printf "$(GREEN)Compiling tests and source for coverage$(RESET)\n"
+	@$(CC) $(CFLAGS) $(SRCS) $(TEST_SRCS) -o $(TEST_BIN) -lcriterion
+	@printf "$(GREEN)Running tests with coverage$(RESET)\n"
+	@LLVM_PROFILE_FILE="coverage.profraw" ./$(TEST_BIN)
+	@printf "$(GREEN)Generating coverage report$(RESET)\n"
+	@llvm-profdata merge -sparse coverage.profraw -o coverage.profdata
+	@llvm-cov report ./$(TEST_BIN) \
+		-instr-profile=coverage.profdata \
+		-ignore-filename-regex="$(TEST_DIR)"
+
+# Utilities
 format:
-	@printf "$(BLUE)Formatting$(RESET) code with clang-format\n"
-	@$(CLANG_FORMAT) -i $(SRCS) $(wildcard $(INCLUDE_DIR)/*.h)
+	@printf "$(BLUE)Formatting$(RESET) code\n"
+	@clang-format -i $(SRCS) $(shell find include -name '*.h')
 
 check:
 	@printf "$(BLUE)Running$(RESET) cppcheck\n"
-	@$(CPPCHECK) $$(grep -v '^\#' .cppcheck.cfg | grep '^--' | tr '\n' ' ') $(SRCS)
+	@cppcheck $(SRCS)
 	@printf "$(BLUE)Running$(RESET) clang-tidy\n"
-	@$(CLANG_TIDY) --config-file=.clang-tidy $(SRCS) -- $(CFLAGS)
+	@clang-tidy $(SRCS) -- $(CFLAGS)
 
-# Run the program
 run: $(TARGET)
 	@printf "$(GREEN)Running$(RESET) $(TARGET)\n"
 	@./$(TARGET)
 
-# Debug build
 debug:
 	@$(MAKE) DEBUG=1
 
-# Help target
 help:
 	@echo "Available targets:"
-	@echo "  all     - Build the project (default)"
-	@echo "  clean   - Remove build artifacts"
-	@echo "  fclean  - Full clean"
-	@echo "  re      - Rebuild from scratch"
-	@echo "  format  - Format code with clang-format"
-	@echo "  check   - Run static analysis (cppcheck + clang-tidy)"
-	@echo "  run     - Build and run the program"
-	@echo "  debug   - Build with debug symbols"
-	@echo "  help    - Show this help message"
+	@echo "  all       - Build the project"
+	@echo "  test      - Build and run tests"
+	@echo "  coverage  - Run tests with coverage"
+	@echo "  clean     - Remove objects"
+	@echo "  fclean    - Full clean"
+	@echo "  re        - Rebuild"
+	@echo "  format    - Run clang-format"
+	@echo "  check     - Static analysis"
+	@echo "  run       - Run the program"
+	@echo "  debug     - Debug build"
+	@echo "  help      - Show this help"
 
-# Phony targets
-.PHONY: all clean fclean re format check run debug help
+.PHONY: all clean fclean re test coverage format check run debug help
 
