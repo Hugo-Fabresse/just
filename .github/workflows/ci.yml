@@ -1,0 +1,60 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, dev ]
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+      - 'docs/**'
+  pull_request:
+    branches: [ main, dev ]
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+      - 'docs/**'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang clang-format clang-tidy cppcheck libcriterion-dev
+
+    - name: Build
+      run: make all
+
+    - name: Check code formatting
+      run: |
+        echo "Checking code formatting..."
+        clang-format --dry-run --Werror $(find src -name '*.c') $(find include -name '*.h')
+      continue-on-error: true
+
+    - name: Static analysis - cppcheck
+      run: |
+        echo "Running cppcheck..."
+        cppcheck --quiet src/
+      continue-on-error: true
+
+    - name: Static analysis - clang-tidy
+      run: |
+        echo "Running clang-tidy..."
+        clang-tidy $(find src -name '*.c') -- -W -Wall -Wextra -Werror -std=c11 -Iinclude
+      continue-on-error: true
+
+    - name: Run tests
+      run: make test
+
+    - name: Archive artifacts
+      uses: actions/upload-artifact@v4
+      if: success()
+      with:
+        name: build-artifacts
+        path: bin/
+        retention-days: 7
+
