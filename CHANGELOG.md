@@ -7,7 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- Nothing yet.
+### Planned
+- Repository infrastructure:
+  - infra/: filesystem, hashing, path utilities, error handling
+  - object/: blob, tree, commit, tag objects
+  - repo/: .just/ repository management
+  - index/: staging area
+- CLI:
+  - modular command system with auto-registration
+  - argument parsing and command dispatch
 
 ---
 
