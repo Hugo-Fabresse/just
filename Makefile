@@ -3,7 +3,7 @@
 # Compiler and flags
 CC := clang
 CFLAGS := -W -Wall -Wextra -Werror -std=c11 -D_POSIX_C_SOURCE=200809L -Iinclude
-LDFLAGS :=
+LDFLAGS := -lssl -lcrypto
 COV_FLAGS := -fprofile-instr-generate -fcoverage-mapping
 
 # Build modes
@@ -73,7 +73,7 @@ test: fclean $(TEST_BIN)
 
 $(TEST_BIN): $(TEST_OBJS) $(filter-out $(OBJ_DIR)/$(SRC_DIR)/main.o,$(OBJS)) | $(BIN_DIR)
 	@printf "$(GREEN)Linking$(RESET) tests\n"
-	@$(CC) $^ -o $@ -lcriterion
+	@$(CC) $(LDFLAGS) $^ -o $@ -lcriterion
 
 # Coverage (LLVM + Criterion)
 coverage: CFLAGS += $(COV_FLAGS)
@@ -81,7 +81,7 @@ coverage: LDFLAGS += $(COV_FLAGS)
 coverage: fclean
 	@printf "$(GREEN)Compiling tests and source for coverage$(RESET)\n"
 	@mkdir -p $(BIN_DIR)
-	@$(CC) $(CFLAGS) $(LDFLAGS) $(filter-out $(SRC_DIR)/main.c,$(SRCS)) $(TEST_SRCS) -o $(TEST_BIN) -lcriterion
+	@$(CC) $(CFLAGS) $(LDFLAGS) $(filter-out $(SRC_DIR)/main.c,$(SRCS)) $(TEST_SRCS) -o $(TEST_BIN) -lcriterion -lssl -lcrypto
 	@printf "$(GREEN)Running tests with coverage$(RESET)\n"
 	@rm -f *.profraw *.profdata
 	@LLVM_PROFILE_FILE="coverage.profraw" ./$(TEST_BIN) --jobs=1 || true
@@ -132,4 +132,3 @@ help:
 	@echo "  help      - Show this help"
 
 .PHONY: all clean fclean re test coverage format check run debug help
-
