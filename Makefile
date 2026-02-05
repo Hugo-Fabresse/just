@@ -2,7 +2,7 @@
 
 # Compiler and flags
 CC := clang
-CFLAGS := -W -Wall -Wextra -Werror -std=c11 -Iinclude
+CFLAGS := -W -Wall -Wextra -Werror -std=c11 -D_POSIX_C_SOURCE=200809L -Iinclude
 LDFLAGS :=
 COV_FLAGS := -fprofile-instr-generate -fcoverage-mapping
 
@@ -71,23 +71,33 @@ test: fclean $(TEST_BIN)
 	@printf "$(GREEN)Running$(RESET) tests\n"
 	@./$(TEST_BIN)
 
-$(TEST_BIN): $(TEST_OBJS) | $(BIN_DIR)
+$(TEST_BIN): $(TEST_OBJS) $(filter-out $(OBJ_DIR)/$(SRC_DIR)/main.o,$(OBJS)) | $(BIN_DIR)
 	@printf "$(GREEN)Linking$(RESET) tests\n"
 	@$(CC) $^ -o $@ -lcriterion
 
 # Coverage (LLVM + Criterion)
 coverage: CFLAGS += $(COV_FLAGS)
 coverage: LDFLAGS += $(COV_FLAGS)
-coverage: fclean $(TEST_BIN)
+coverage: fclean
 	@printf "$(GREEN)Compiling tests and source for coverage$(RESET)\n"
-	@$(CC) $(CFLAGS) $(SRCS) $(TEST_SRCS) -o $(TEST_BIN) -lcriterion
+	@mkdir -p $(BIN_DIR)
+	@$(CC) $(CFLAGS) $(LDFLAGS) $(filter-out $(SRC_DIR)/main.c,$(SRCS)) $(TEST_SRCS) -o $(TEST_BIN) -lcriterion
 	@printf "$(GREEN)Running tests with coverage$(RESET)\n"
-	@LLVM_PROFILE_FILE="coverage.profraw" ./$(TEST_BIN)
+	@rm -f *.profraw *.profdata
+	@LLVM_PROFILE_FILE="coverage.profraw" ./$(TEST_BIN) --jobs=1 || true
 	@printf "$(GREEN)Generating coverage report$(RESET)\n"
-	@llvm-profdata merge -sparse coverage.profraw -o coverage.profdata
-	@llvm-cov report ./$(TEST_BIN) \
-		-instr-profile=coverage.profdata \
-		-ignore-filename-regex="$(TEST_DIR)"
+	@if [ -f coverage.profraw ]; then \
+		llvm-profdata merge -sparse coverage.profraw -o coverage.profdata 2>/dev/null || \
+		(rm -f coverage.profraw coverage.profdata && echo "$(RED)Failed to merge coverage data$(RESET)" && exit 1); \
+	fi
+	@if [ -f coverage.profdata ]; then \
+		llvm-cov report ./$(TEST_BIN) \
+			-instr-profile=coverage.profdata \
+			-ignore-filename-regex="$(TEST_DIR)"; \
+	else \
+		echo "$(RED)No coverage data generated$(RESET)"; \
+		exit 1; \
+	fi
 
 # Utilities
 format:

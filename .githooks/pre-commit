@@ -31,17 +31,14 @@ for file in $FILES; do
 done
 
 printf "${BLUE}3. Running cppcheck...${RESET}\n"
-CPP_OK=1
-for file in $FILES; do
-    cppcheck $(grep -v '^#' .cppcheck.cfg | tr '\n' ' ') "$file"
-    if [ $? -ne 0 ]; then
-        printf "${RED}   Cppcheck failed on $file. Commit aborted.${RESET}\n"
-        CPP_OK=0
-    else
-        printf "${GREEN}   Cppcheck OK for $file${RESET}\n"
-    fi
-done
-[ $CPP_OK -eq 0 ] && exit 1
+
+cppcheck $(grep -v '^#' .cppcheck.cfg | tr '\n' ' ') src/
+if [ $? -ne 0 ]; then
+    printf "${RED}   Cppcheck failed on src/. Commit aborted.${RESET}\n"
+    exit 1
+fi
+
+printf "${GREEN}   Cppcheck OK for src/${RESET}\n"
 
 printf "${BLUE}4. Running clang-tidy...${RESET}\n"
 TIDY_OK=1
