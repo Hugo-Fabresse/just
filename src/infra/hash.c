@@ -16,7 +16,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "infra/hash.h"  // Declaration of all fs functions
+#include "infra/hash.h"  // Declaration of all hash functions
 #include <ctype.h>       // isxdigit() to validate hexadecimal characters
 #include <errno.h>       // Provides errno values for error reporting
 #include <openssl/sha.h> // SHA256() for computing SHA-256 hash

@@ -16,8 +16,8 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JUST_FS_H
-#define JUST_FS_H
+#ifndef JUST_INFRA_FS_H
+#define JUST_INFRA_FS_H
 
 /**
  * @file fs.h
@@ -117,5 +117,5 @@ uint8_t fs_is_file(const char *path);
  */
 char **fs_list_dir(const char *path, size_t *count);
 
-#endif // JUST_FS_H
+#endif // JUST_INFRA_FS_H
 

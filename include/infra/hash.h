@@ -16,8 +16,8 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef JUST_HASH_H
-#define JUST_HASH_H
+#ifndef JUST_INFRA_HASH_H
+#define JUST_INFRA_HASH_H
 
 /**
  * @file hash.h
@@ -93,5 +93,5 @@ int hash_equals(const hash_t *a, const hash_t *b);
  */
 void hash_copy(hash_t *dest, const hash_t *src);
 
-#endif // JUST_HASH_H
+#endif // JUST_INFRA_HASH_H
 

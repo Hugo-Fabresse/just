@@ -1,0 +1,25 @@
+/* code, message, errno */
+X(ERR_OK,                       "Success",  0)
+
+X(ERR_IO,                       "I/O error",                    EIO)
+X(ERR_FILE_NOT_FOUND,           "File not found",               ENOENT)
+X(ERR_FILE_ALREADY_EXISTS,      "File already exists",          EEXIST)
+X(ERR_PERMISSION_DENIED,        "Permission denied",            EACCES)
+X(ERR_DISK_FULL,                "Disk full",                    ENOSPC)
+
+X(ERR_INVALID_ARG,              "Invalid argument",             EINVAL)
+X(ERR_INVALID_FORMAT,           "Invalid format",               EINVAL)
+X(ERR_INVALID_STATE,            "Invalid state",                EINVAL)
+
+X(ERR_NOT_A_REPO,               "Not a JUST repository",        0)
+X(ERR_REPO_ALREADY_EXISTS,      "Repository already exists",    EEXIST)
+X(ERR_CORRUPTED_REPO,           "Corrupted repository",         0)
+
+X(ERR_INVALID_COMMIT_TYPE,      "Invalid commit type",          0)
+X(ERR_INVALID_PHASE_TRANSITION, "Invalid phase transition",     0)
+X(ERR_REWRITE_FORBIDDEN,        "Rewrite forbidden",            0)
+X(ERR_MISSING_REQUIRED_FIELD,   "Missing required field",       0)
+
+X(ERR_OUT_OF_MEMORY,            "Out of memory",                ENOMEM)
+X(ERR_INTERNAL,                 "Internal error",               EFAULT)
+
