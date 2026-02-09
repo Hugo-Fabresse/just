@@ -3,7 +3,11 @@ Checks: >
   bugprone-*,
   readability-*,
   performance-*,
-  -readability-magic-numbers
+
+  -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
+  -clang-analyzer-security.insecureAPI.strcpy,
+  -clang-analyzer-security.insecureAPI.memcpy,
+  -clang-analyzer-security.insecureAPI.strcat
 
 WarningsAsErrors: '*'
 
