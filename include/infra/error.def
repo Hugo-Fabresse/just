@@ -1,25 +1,25 @@
-/* code, message, errno */
-X(ERR_OK,                       "Success",  0)
+/* message, code, errno */
+X("Success",                      ERR_OK,                       0)
 
-X(ERR_IO,                       "I/O error",                    EIO)
-X(ERR_FILE_NOT_FOUND,           "File not found",               ENOENT)
-X(ERR_FILE_ALREADY_EXISTS,      "File already exists",          EEXIST)
-X(ERR_PERMISSION_DENIED,        "Permission denied",            EACCES)
-X(ERR_DISK_FULL,                "Disk full",                    ENOSPC)
+X("I/O error",                    ERR_IO,                       EIO)
+X("File not found",               ERR_FILE_NOT_FOUND,           ENOENT)
+X("File already exists",          ERR_FILE_ALREADY_EXISTS,      EEXIST)
+X("Permission denied",            ERR_PERMISSION_DENIED,        EACCES)
+X("Disk full",                    ERR_DISK_FULL,                ENOSPC)
 
-X(ERR_INVALID_ARG,              "Invalid argument",             EINVAL)
-X(ERR_INVALID_FORMAT,           "Invalid format",               EINVAL)
-X(ERR_INVALID_STATE,            "Invalid state",                EINVAL)
+X("Invalid argument",             ERR_INVALID_ARG,              EINVAL)
+X("Invalid format",               ERR_INVALID_FORMAT,           EINVAL)
+X("Invalid state",                ERR_INVALID_STATE,            EINVAL)
 
-X(ERR_NOT_A_REPO,               "Not a JUST repository",        0)
-X(ERR_REPO_ALREADY_EXISTS,      "Repository already exists",    EEXIST)
-X(ERR_CORRUPTED_REPO,           "Corrupted repository",         0)
+X("Not a JUST repository",        ERR_NOT_A_REPO,               0)
+X("Repository already exists",    ERR_REPO_ALREADY_EXISTS,      EEXIST)
+X("Corrupted repository",         ERR_CORRUPTED_REPO,           0)
 
-X(ERR_INVALID_COMMIT_TYPE,      "Invalid commit type",          0)
-X(ERR_INVALID_PHASE_TRANSITION, "Invalid phase transition",     0)
-X(ERR_REWRITE_FORBIDDEN,        "Rewrite forbidden",            0)
-X(ERR_MISSING_REQUIRED_FIELD,   "Missing required field",       0)
+X("Invalid commit type",          ERR_INVALID_COMMIT_TYPE,      0)
+X("Invalid phase transition",     ERR_INVALID_PHASE_TRANSITION, 0)
+X("Rewrite forbidden",            ERR_REWRITE_FORBIDDEN,        0)
+X("Missing required field",       ERR_MISSING_REQUIRED_FIELD,   0)
 
-X(ERR_OUT_OF_MEMORY,            "Out of memory",                ENOMEM)
-X(ERR_INTERNAL,                 "Internal error",               EFAULT)
+X("Out of memory",                ERR_OUT_OF_MEMORY,            ENOMEM)
+X("Internal error",               ERR_INTERNAL,                 EFAULT)
 

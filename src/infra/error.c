@@ -23,13 +23,13 @@
 static _Thread_local error_code_t last_error = ERR_OK;
 
 typedef struct {
-    error_code_t code;
     const char *message;
+    error_code_t code;
     int posix_errno;
 } error_info_t;
 
 static const error_info_t error_table[] = {
-#define X(code, msg, err) {code, msg, err},
+#define X(msg, code, err) {msg, code, err},
 #include "infra/error.def"
 #undef X
 };
@@ -50,10 +50,10 @@ void error_set(error_code_t code)
 {
     last_error = code;
     for (size_t i = 0; i < error_table_len; i++) {
-        if (error_table[i].code == code && error_table[i].posix_errno)
+        if (error_table[i].code == code && error_table[i].posix_errno) {
             errno = error_table[i].posix_errno;
+        }
     }
-    return;
 }
 
 error_code_t error_get(void) { return last_error; }

@@ -36,7 +36,7 @@
  * Each code represents a specific error condition.
  */
 typedef enum {
-#define X(code, msg, err) code,
+#define X(msg, code, err) code,
 #include "infra/error.def"
 #undef X
 } error_code_t;
